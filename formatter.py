@@ -35,9 +35,8 @@ def export_schedule_to_csv(schedule, filename='schedule.csv'):
         writer.writerow(["Day", "Subject", "Lecturer", "Group", "Room", "Timeslot"])
 
         days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-        for day_index, day in enumerate(schedule):
-            for lesson in day:
-                writer.writerow([days[day_index], lesson.subject, lesson.lecturer, lesson.group.name, lesson.room.name,
+        for lesson_index, lesson in enumerate(schedule):
+            writer.writerow([days[(lesson_index // 8)], lesson.subject, lesson.lecturer, lesson.group.name, lesson.room.name,
                                  lesson.timeslot])
 
     print(f"Schedule exported to {filename}")

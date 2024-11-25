@@ -4,12 +4,11 @@ import random
 from formatter import export_fortnight_to_csv, export_schedule_to_csv
 from uni import Lesson
 
-from const import SUBJECTS, ROOMS, TIMESLOTS, GROUPS, LECTURERS
+from const import SUBJECTS, ROOMS, TIMESLOTS, GROUPS, LECTURERS, PROGRAM, DAYS
 
-POP_SIZE1 = 100
-POP_SIZE2 = 10
-MUT_RATE = 0.2
-GENERATIONS = 50
+POP_SIZE = 10
+MUT_RATE = 0.25
+GENERATIONS = 10
 
 
 def generate_random_lesson():
@@ -18,17 +17,18 @@ def generate_random_lesson():
     lecturer = subject.get_random_teacher()
     group = random.choice(GROUPS)
     room = random.choice(ROOMS)
+    day = random.choice(DAYS)
     timeslot = random.choice(TIMESLOTS)
-    return Lesson(subject_name, lecturer, group, room, timeslot)
+    return Lesson(subject_name, lecturer, group, room, timeslot, day)
 
 
-def generate_random_day():
-    day = []
+def generate_random_week():
+    week = []
 
-    for _ in range(10):
+    for _ in range(28):
         lesson = generate_random_lesson()
-        day.append(lesson)
-    return day
+        week.append(lesson)
+    return week
 
 
 def loss(gene, week_loss=False):
@@ -43,19 +43,19 @@ def loss(gene, week_loss=False):
 
     for lesson in gene:
         # Викладач не може викладати в двох місцях одночасно
-        if (lesson.lecturer, lesson.timeslot) in lecturer_times:
+        if (lesson.lecturer, lesson.timeslot, lesson.day) in lecturer_times:
             return math.inf
-        lecturer_times[(lesson.lecturer, lesson.timeslot)] = lesson.room
+        lecturer_times[(lesson.lecturer, lesson.timeslot, lesson.day)] = lesson.room
 
         # Група не може мати кілька занять одночасно
-        if (lesson.group, lesson.timeslot) in group_times:
+        if (lesson.group, lesson.timeslot, lesson.day) in group_times:
             return math.inf
-        group_times[(lesson.group, lesson.timeslot)] = lesson.room
+        group_times[(lesson.group, lesson.timeslot, lesson.day)] = lesson.room
 
         # Аудиторія не може бути зайнята більше одного разу в один час
-        if (lesson.room, lesson.timeslot) in room_times:
+        if (lesson.room, lesson.timeslot, lesson.day) in room_times:
             return math.inf
-        room_times[(lesson.room, lesson.timeslot)] = lesson.group
+        room_times[(lesson.room, lesson.timeslot, lesson.day)] = lesson.group
 
         lecturer_slots[lesson.lecturer].append(lesson.timeslot)
         group_slots[lesson.group].append(lesson.timeslot)
@@ -87,6 +87,18 @@ def loss(gene, week_loss=False):
 
         if students_num > room_capacity:
             penalty += (students_num - room_capacity) * 50
+
+    # Кількість занятть має наближатися до кількості, що вказана у програмі
+    schedule_programm = dict()
+    for lesson in gene:
+       if lesson.lecturer in schedule_programm.keys():
+           schedule_programm[lesson.lecturer] += 1
+       else:
+           schedule_programm[lesson.lecturer] = 1
+
+    for lecturer in schedule_programm.keys():
+        if schedule_programm[lecturer] != PROGRAM[lecturer]:
+            penalty += abs(schedule_programm[lecturer] - PROGRAM[lecturer])
 
     # Тижневі обмеження
     # Зменшення ассиметричності
@@ -122,7 +134,7 @@ def genetic_algorithm(logging=False, week_loss=False):
     #    population = generate_schedule_population()
     #else:
     while penalty == math.inf:
-        population = [generate_random_day() for _ in range(POP_SIZE1)]
+        population = [generate_random_week() for _ in range(POP_SIZE)]
         penalty = min([loss(p, week_loss) for p in population])
 
     for generation in range(GENERATIONS):
@@ -133,7 +145,7 @@ def genetic_algorithm(logging=False, week_loss=False):
         new_population = []
 
         while penalty == math.inf:
-            for _ in range(POP_SIZE1 // 2):
+            for _ in range(POP_SIZE // 2):
                 child1, child2 = crossover(parents[0], parents[1])
                 new_population.extend([mutate(child1), mutate(child2)])
             penalty = min([loss(p) for p in new_population])
@@ -149,14 +161,11 @@ def genetic_algorithm(logging=False, week_loss=False):
 
 
 
-def generate_schedule(logging=False):
-    best_schedule = []
-    for _ in range(5):
-        best_schedule.append(genetic_algorithm(logging, week_loss=False))
+def generate_schedule(logging=True):
+    best_schedule = genetic_algorithm(logging, week_loss=False)
     return best_schedule
 
 
 print("Generating week 1")
 best_schedule = generate_schedule()
-print(best_schedule)
 export_schedule_to_csv(best_schedule)

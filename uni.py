@@ -9,15 +9,15 @@ class Group:
 
 class Lesson:
 
-    def __init__(self, subject, lecturer, group, room, timeslot):
+    def __init__(self, subject, lecturer, group, room, timeslot, day):
         self.subject = subject
         self.lecturer = lecturer
         self.group = group
         self.room = room
         self.timeslot = timeslot
-
+        self.day = day
     def __repr__(self):
-        return f"({self.subject}, {self.lecturer}, {self.group.name}, {self.room.name}, {self.timeslot})"
+        return f"({self.subject}, {self.lecturer}, {self.group.name}, {self.room.name}, {self.day}, {self.timeslot})"
 
 
 class Room:
