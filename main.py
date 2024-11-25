@@ -6,9 +6,9 @@ from uni import Lesson
 
 from const import SUBJECTS, ROOMS, TIMESLOTS, GROUPS, LECTURERS, PROGRAM, DAYS
 
-POP_SIZE = 10
+POP_SIZE = 100
 MUT_RATE = 0.25
-GENERATIONS = 10
+GENERATIONS = 50
 
 
 def generate_random_lesson():
